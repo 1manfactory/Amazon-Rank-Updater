@@ -10,7 +10,7 @@ class AmazonAPI {
         Debug::log("Fetching rank for ASIN: $asin");
         
         if (!$this->isLive) {
-            Debug::log("Debug mode: Returning mock rank", "DEBUG");
+            Debug::log("Test mode: Returning mock rank", "DEBUG");
             return rand(1000, 1000000);
         }
 

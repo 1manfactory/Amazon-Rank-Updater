@@ -21,15 +21,24 @@ Update Amazon product ranks for a list of ASINs stored in a database. It uses th
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/amazon-rank-updater.git
+   cd ~
+   git clone https://github.com/1manfactory/amazon-rank-updater.git
    ```
 
-2. Install dependencies (if any):
+2. Install:
    ```
-   composer install
+   cd amazon-rank-updater
+   chmod +x php-wrapper.sh
+   mkdir -p ~/bin
+   ln -s ~/projects/amazon-rank-updater/php-wrapper.sh ~/bin/amazon-rank-updater
+   export PATH="$HOME/bin:$PATH"
    ```
 
 3. Set up your database and update the `config.php` file with your credentials.
+   ```
+   cp config.example.php config.php
+   nano config.php
+   ```
 
 4. Update `config.php` with your Amazon API credentials and email settings.
 
@@ -38,14 +47,13 @@ Update Amazon product ranks for a list of ASINs stored in a database. It uses th
 Run the script using the provided wrapper:
 
 ```
-./php-wrapper.sh [options]
+amazon_rank_updater [options]
 ```
 
 Options:
 - `-h, --help`: Display help information
 - `-v, --verbose`: Increase verbosity
-- `-o, --output`: Specify output file
-- `--debug`: Run in debug mode (enabled by default)
+- `-l, --live`: Run in live mode (perform actual API calls)
 
 ## Configuration
 

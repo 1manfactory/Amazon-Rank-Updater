@@ -45,11 +45,17 @@ function main() {
     $db = new Database();
     $api = new AmazonAPI();
     
-    // Set this to true to actually perform API calls
-    $api->setLive(false);
+    // Set live mode based on environment variable
+    $liveMode = isset($_SERVER['PHP_LIVE_MODE']) && $_SERVER['PHP_LIVE_MODE'] == 1;
+    $api->setLive($liveMode);
     
-    // Set this to true for detailed debug output
-    Debug::setVerbose(true);
+    Debug::setVerbose(isset($_SERVER['PHP_VERBOSE']) && $_SERVER['PHP_VERBOSE'] == 1);
+    
+    if ($liveMode) {
+        Debug::log("Running in LIVE mode. API calls will be made to Amazon.", "WARNING");
+    } else {
+        Debug::log("Running in TEST mode. No actual API calls will be made.", "INFO");
+    }
     
     while (true) {
         try {

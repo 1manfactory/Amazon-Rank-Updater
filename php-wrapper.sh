@@ -1,33 +1,35 @@
 #!/bin/bash
 
-# Wrapper script for the Amazon Rank Updater PHP program
+# get dir
+SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 
 # Function for help text
 show_help() {
     cat << EOF
-Usage: ${0##*/} [OPTION]... [FILE]...
-Wrapper for the Amazon Rank Updater PHP program with additional functionality.
+Usage: ${0##*/} [OPTION]...
+Wrapper for the Amazon Rank Updater PHP program.
 
 Options:
     -h, --help      Display this help and exit
     -v, --verbose   Increase verbosity
-    -o, --output    Specify output file
-    --debug         Run in debug mode (enabled by default)
+    -l, --live      Run in live mode (perform actual API calls)
 
 Examples:
-    ${0##*/} input.txt
-    ${0##*/} -v -o output.txt input1.txt input2.txt
-
-For more information, see the full documentation at:
-https://example.com/amazon-rank-updater-docs
+    ${0##*/}
+    ${0##*/} -v -l
 EOF
 }
 
 # Default values
 VERBOSE=0
-OUTPUT_FILE=""
-DEBUG=1  # Debug mode enabled by default
-PHP_SCRIPT="amazon_rank_updater.php"  # Name of the PHP script
+LIVE_MODE=0
+
+# Check if no arguments were provided
+if [ $# -eq 0 ]; then
+    show_help
+    exit 0
+fi
 
 # Process command line arguments
 while [[ $# -gt 0 ]]; do
@@ -40,41 +42,33 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=1
             shift
             ;;
-        -o|--output)
-            OUTPUT_FILE="$2"
-            shift 2
-            ;;
-        --debug)
-            DEBUG=1
+        -l|--live)
+            LIVE_MODE=1
             shift
             ;;
         *)
-            break
+            echo "Unknown option: $1"
+            show_help
+            exit 1
             ;;
     esac
 done
 
-# Check if input files were specified
-if [ $# -eq 0 ]; then
-    echo "Error: No input files specified." >&2
-    show_help
-    exit 1
-fi
-
 # Set environment variables based on options
 [ $VERBOSE -eq 1 ] && export PHP_VERBOSE=1
-[ $DEBUG -eq 1 ] && export PHP_DEBUG=1
+[ $LIVE_MODE -eq 1 ] && export PHP_LIVE_MODE=1
 
 # Set an environment variable to indicate that the wrapper is being used
 export WRAPPER_SCRIPT=1
 
-# Build the command for the PHP script
-CMD="php $PHP_SCRIPT"
-[ -n "$OUTPUT_FILE" ] && CMD="$CMD -o $OUTPUT_FILE"
+# Change to the script directory
+cd "$SCRIPT_DIR" || exit 1
 
-# Execute the PHP script with the remaining arguments
-if [ $VERBOSE -eq 1 ]; then
-    echo "Executing: $CMD $@"
+# Check if the PHP script exists
+if [ ! -f "amazon_rank_updater.php" ]; then
+    echo "Error: amazon_rank_updater.php not found in $SCRIPT_DIR"
+    exit 1
 fi
 
-exec $CMD "$@"
+# Execute the PHP script
+php amazon_rank_updater.php
