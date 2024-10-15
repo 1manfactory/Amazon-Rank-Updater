@@ -4,31 +4,25 @@ class AmazonAPI {
 
     function sendRequest($url, $headers, $body)
     {
-        // cURL-Initialisierung
         $ch = curl_init($url);
 
         Debug::log("Sending request to Amazon API: $url", "DEBUG");
     
-        // Konfigurieren Sie cURL
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     
-        // Senden Sie die Anfrage
         $response = curl_exec($ch);
 
         Debug::log("Response:" . print_r($response, true), "DEBUG");
     
-        // Überprüfen Sie auf Fehler
         if (curl_errno($ch)) {
             echo 'Error:' . curl_error($ch);
         }
     
-        // Antwort dekodieren
         $responseDecoded = json_decode($response, true);
     
-        // Schließen Sie den cURL-Handle
         curl_close($ch);
     
         return $responseDecoded;
@@ -46,7 +40,7 @@ class AmazonAPI {
             return rand(1000, 1000000);
         }
     
-        // Header vorbereiten, aber die Signatur separat generieren
+        // Prepare Header
         $amzDate = gmdate('Ymd\THis\Z');
         $dateStamp = gmdate('Ymd'); // Für die Signatur
         $headers = $this->createSignedHeaders($url, $amzDate, $dateStamp, $asin);
@@ -57,11 +51,11 @@ class AmazonAPI {
             'PartnerTag' => AWS_ASSOCIATE_TAG,
             'PartnerType' => 'Associates',
             'Resources' => [
-                'BrowseNodeInfo.WebsiteSalesRank'
+                'BrowseNodeInfo.WebsiteSalesRank',
+                'ItemInfo.Title'
             ]
         ];
     
-        // Senden Sie die Anfrage mit cURL
         $response = $this->sendRequest($url, $headers, $body);
 
         if ($response === false) {
@@ -76,9 +70,12 @@ class AmazonAPI {
             return false;
         }        
     
-        // Überprüfen, ob der Rang vorhanden ist
+        // check the rank
         if (isset($response['ItemsResult']['Items'][0]['BrowseNodeInfo']['WebsiteSalesRank']['Rank'])) {
-            return $response['ItemsResult']['Items'][0]['BrowseNodeInfo']['WebsiteSalesRank']['Rank'];
+            $rank = $response['ItemsResult']['Items'][0]['BrowseNodeInfo']['WebsiteSalesRank']['Rank'];
+            $title = $response['ItemsResult']['Items'][0]['ItemInfo']['Title']['DisplayValue'] ?? 'Unknown Title';
+            Debug::log("Rank for ASIN $asin ($title): $rank", "INFO");
+            return $rank;
         } else {
             Debug::log("No rank found for ASIN: $asin", "WARNING");
             return false;
@@ -90,26 +87,25 @@ class AmazonAPI {
     {
         $method = 'POST';
         $service = 'execute-api';
-        $region = AWS_REGION;
-        $host = AWS_HOST;
         $requestUri = '/paapi5/getitems';
         $payloadHash = hash('sha256', json_encode([
             'ItemIds' => [$asin],
             'PartnerTag' => AWS_ASSOCIATE_TAG,
             'PartnerType' => 'Associates',
             'Resources' => [
-                'BrowseNodeInfo.WebsiteSalesRank'
+                'BrowseNodeInfo.WebsiteSalesRank',
+                'ItemInfo.Title'
             ]
         ]));
 
-        $canonicalHeaders = "content-type:application/json\nhost:$host\nx-amz-date:$amzDate\n";
+        $canonicalHeaders = "content-type:application/json\nhost:".AWS_HOST."\nx-amz-date:$amzDate\n";
         $signedHeaders = 'content-type;host;x-amz-date';
 
         $canonicalRequest = "$method\n$requestUri\n\n$canonicalHeaders\n$signedHeaders\n$payloadHash";
-        $credentialScope = "$dateStamp/$region/$service/aws4_request";
+        $credentialScope = "$dateStamp/".AWS_REGION."/$service/aws4_request";
         $stringToSign = "AWS4-HMAC-SHA256\n$amzDate\n$credentialScope\n" . hash('sha256', $canonicalRequest);
 
-        $signingKey = $this->getSignatureKey(AWS_SECRET_KEY, $dateStamp, $region, $service);
+        $signingKey = $this->getSignatureKey(AWS_SECRET_KEY, $dateStamp, AWS_REGION, $service);
         $signature = hash_hmac('sha256', $stringToSign, $signingKey);
 
         $authorizationHeader = "AWS4-HMAC-SHA256 Credential=" . AWS_ACCESS_KEY . "/$credentialScope, SignedHeaders=$signedHeaders, Signature=$signature";
