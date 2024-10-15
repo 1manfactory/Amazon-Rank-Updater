@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# get dir
+# Get the absolute path of the script
 SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 
@@ -25,12 +25,6 @@ EOF
 VERBOSE=0
 LIVE_MODE=0
 
-# Check if no arguments were provided
-if [ $# -eq 0 ]; then
-    show_help
-    exit 0
-fi
-
 # Process command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -47,7 +41,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            echo "Unknown option: $1"
+            echo "Unknown option: $1" >&2
             show_help
             exit 1
             ;;
@@ -66,7 +60,7 @@ cd "$SCRIPT_DIR" || exit 1
 
 # Check if the PHP script exists
 if [ ! -f "amazon_rank_updater.php" ]; then
-    echo "Error: amazon_rank_updater.php not found in $SCRIPT_DIR"
+    echo "Error: amazon_rank_updater.php not found in $SCRIPT_DIR" >&2
     exit 1
 fi
 

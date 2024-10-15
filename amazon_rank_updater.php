@@ -10,7 +10,16 @@ require_once 'database.php';
 require_once 'amazon_api.php';
 require_once 'debug.php';
 
+// Initialize Debug and get the log file path
 Debug::init();
+$logFilePath = Debug::getLogFilePath();
+
+// Display startup information
+echo "Amazon Rank Updater\n";
+echo "===================\n";
+echo "Started at: " . date('Y-m-d H:i:s') . "\n";
+echo "Log file: $logFilePath\n";
+echo "===================\n\n";
 
 function checkAndCreateTables() {
     $db = new Database();

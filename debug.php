@@ -12,6 +12,10 @@ class Debug {
         self::$verbose = $value;
     }
 
+    public static function getLogFilePath() {
+        return self::$logFile;
+    }
+        
     public static function log($message, $level = 'INFO') {
         $timestamp = date('Y-m-d H:i:s');
         $logMessage = "[$timestamp] [$level] $message";
