@@ -58,10 +58,10 @@ export WRAPPER_SCRIPT=1
 cd "$SCRIPT_DIR" || exit 1
 
 # Check if the PHP script exists
-if [ ! -f "amazon_rank_updater.php" ]; then
-    echo "Error: amazon_rank_updater.php not found in $SCRIPT_DIR" >&2
+if [ ! -f "run.php" ]; then
+    echo "Error: run.php not found in $SCRIPT_DIR" >&2
     exit 1
 fi
 
 # Execute the PHP script
-php amazon_rank_updater.php
+php run.php

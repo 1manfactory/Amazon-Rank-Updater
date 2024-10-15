@@ -1,2 +1,10 @@
 config.php
 debug.log
+.phpcs.xml
+phpmd_checker.php
+phpstan.neon
+ruleset.xml
+run.php
+vendor/*
+composer.json
+composer.lock

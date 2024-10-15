@@ -1,8 +1,11 @@
 <?php
-class Database {
+
+class Database
+{
     private $conn;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
         if ($this->conn->connect_error) {
             throw new Exception("Connection failed: " . $this->conn->connect_error);
@@ -10,27 +13,43 @@ class Database {
         $this->conn->set_charset("utf8");
     }
 
-    public function checkSourceTable() {
+    public function checkSourceTable(): void
+    {
         $sql = "SHOW TABLES LIKE '" . SOURCE_TABLE . "'";
         $result = $this->conn->query($sql);
+
+        if (!$result instanceof mysqli_result) {
+            throw new Exception("Database query error: " . $this->conn->error);
+        }
+
         if ($result->num_rows == 0) {
             throw new Exception("Source table " . SOURCE_TABLE . " does not exist.");
         }
 
         $sql = "SHOW COLUMNS FROM " . SOURCE_TABLE . " LIKE '" . SOURCE_ASIN_COLUMN . "'";
         $result = $this->conn->query($sql);
+
+        if (!$result instanceof mysqli_result) {
+            throw new Exception("Database query error: " . $this->conn->error);
+        }
+
         if ($result->num_rows == 0) {
             throw new Exception("Source column " . SOURCE_ASIN_COLUMN . " does not exist in table " . SOURCE_TABLE);
         }
     }
 
-    public function checkTargetTable() {
+    public function checkTargetTable(): bool
+    {
         $sql = "SHOW TABLES LIKE '" . TARGET_TABLE . "'";
         $result = $this->conn->query($sql);
+        if (!$result instanceof mysqli_result) {
+            throw new Exception("Database query error: " . $this->conn->error);
+        }
         return $result->num_rows > 0;
     }
 
-    private function getCreateTableStatement() {
+    public function getCreateTableStatement(): string
+    {
         return "CREATE TABLE " . TARGET_TABLE . " (
             id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             asin VARCHAR(10) NOT NULL,
@@ -40,34 +59,41 @@ class Database {
         )";
     }
 
-    public function createTargetTable() {
+    public function createTargetTable(): void
+    {
         $sql = $this->getCreateTableStatement();
         if (!$this->conn->query($sql)) {
             throw new Exception("Failed to create target table: " . $this->conn->error);
         }
     }
 
-    public function getASINsToUpdate() {
+    /**
+     * @return string[] List of ASINs to update
+     * @throws Exception
+     */
+    public function getASINsToUpdate(): array
+    {
         $sql = "SELECT DISTINCT tm." . SOURCE_ASIN_COLUMN . " 
                 FROM " . SOURCE_TABLE . " tm
                 LEFT JOIN " . TARGET_TABLE . " r ON tm." . SOURCE_ASIN_COLUMN . " = r.asin AND r.date = CURDATE()
                 WHERE r.asin IS NULL";
         $result = $this->conn->query($sql);
-        
-        if ($result === false) {
+
+        if (!$result instanceof mysqli_result) {
             throw new Exception("Database query error: " . $this->conn->error);
         }
-        
+
         $asins = [];
         if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $asins[] = $row[SOURCE_ASIN_COLUMN];
+            while ($row = $result->fetch_assoc()) {
+                $asins[] = (string)$row[SOURCE_ASIN_COLUMN];
             }
         }
         return $asins;
     }
 
-    public function updateRank($asin, $rank) {
+    public function updateRank(string $asin, ?int $rank): void
+    {
         $sql = "INSERT INTO " . TARGET_TABLE . " (asin, date, rank) VALUES (?, CURDATE(), ?)";
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) {
