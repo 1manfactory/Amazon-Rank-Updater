@@ -1,15 +1,10 @@
 <?php
 class Debug {
-    private static $verbose = false;
     private static $logFile = 'debug.log';
     private static $emailTo;
 
     public static function init() {
         self::$emailTo = ERROR_EMAIL_TO;
-    }
-
-    public static function setVerbose($value) {
-        self::$verbose = $value;
     }
 
     public static function getLogFilePath() {
@@ -21,7 +16,9 @@ class Debug {
         $logMessage = "[$timestamp] [$level] $message";
         
         // Log to file
-        file_put_contents(self::$logFile, $logMessage . PHP_EOL, FILE_APPEND);
+        if (file_put_contents(self::getLogFilePath(), $logMessage . PHP_EOL, FILE_APPEND) === false) {
+            error_log("Failed to write to log file: " . self::$logFile);
+        }        
         
         // Log to syslog for ERROR and CRITICAL levels
         if (in_array($level, ['ERROR', 'CRITICAL'])) {
@@ -31,7 +28,7 @@ class Debug {
             closelog();
         }
         
-        if (self::$verbose) {
+        if ($_SERVER['PHP_VERBOSE'] == 1) {
             echo $logMessage . PHP_EOL;
         }
     }
@@ -42,8 +39,8 @@ class Debug {
             return;
         }
 
-        $headers = 'From: amazon-rank-updater@yourdomain.com' . "\r\n" .
-            'Reply-To: noreply@yourdomain.com' . "\r\n" .
+        $headers = 'From: '. ERROR_EMAIL_FROM . "\r\n" .
+            'Reply-To: ' .ERROR_EMAIL_REPLY_TO . "\r\n" .
             'X-Mailer: PHP/' . phpversion();
 
         if (mail(self::$emailTo, $subject, $message, $headers)) {

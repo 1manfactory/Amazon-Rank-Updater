@@ -30,20 +30,7 @@ class Database {
         return $result->num_rows > 0;
     }
 
-    public function createTargetTable() {
-        $sql = "CREATE TABLE " . TARGET_TABLE . " (
-            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            asin VARCHAR(10) NOT NULL,
-            date DATE NOT NULL,
-            rank INT(11) UNSIGNED NOT NULL,
-            UNIQUE KEY unique_asin_date (asin, date)
-        )";
-        if (!$this->conn->query($sql)) {
-            throw new Exception("Failed to create target table: " . $this->conn->error);
-        }
-    }
-
-    public function getCreateTableStatement() {
+    private function getCreateTableStatement() {
         return "CREATE TABLE " . TARGET_TABLE . " (
             id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             asin VARCHAR(10) NOT NULL,
@@ -53,12 +40,18 @@ class Database {
         )";
     }
 
+    public function createTargetTable() {
+        $sql = $this->getCreateTableStatement();
+        if (!$this->conn->query($sql)) {
+            throw new Exception("Failed to create target table: " . $this->conn->error);
+        }
+    }
+
     public function getASINsToUpdate() {
         $sql = "SELECT DISTINCT tm." . SOURCE_ASIN_COLUMN . " 
                 FROM " . SOURCE_TABLE . " tm
                 LEFT JOIN " . TARGET_TABLE . " r ON tm." . SOURCE_ASIN_COLUMN . " = r.asin AND r.date = CURDATE()
-                WHERE r.asin IS NULL
-                LIMIT 1000";
+                WHERE r.asin IS NULL";
         $result = $this->conn->query($sql);
         
         if ($result === false) {

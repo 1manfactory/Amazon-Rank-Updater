@@ -16,8 +16,8 @@ Options:
     -l, --live      Run in live mode (perform actual API calls)
 
 Examples:
-    ${0##*/}
-    ${0##*/} -v -l
+    ${0##*/} -v
+    ${0##*/} -l
 EOF
 }
 
@@ -34,11 +34,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         -v|--verbose)
             VERBOSE=1
-            shift
             ;;
         -l|--live)
             LIVE_MODE=1
-            shift
             ;;
         *)
             echo "Unknown option: $1" >&2
@@ -46,11 +44,12 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
     esac
+    shift
 done
 
 # Set environment variables based on options
-[ $VERBOSE -eq 1 ] && export PHP_VERBOSE=1
-[ $LIVE_MODE -eq 1 ] && export PHP_LIVE_MODE=1
+export PHP_VERBOSE=${VERBOSE:-0}
+export PHP_LIVE_MODE=${LIVE_MODE:-0}
 
 # Set an environment variable to indicate that the wrapper is being used
 export WRAPPER_SCRIPT=1

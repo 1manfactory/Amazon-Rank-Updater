@@ -19,7 +19,40 @@ echo "Amazon Rank Updater\n";
 echo "===================\n";
 echo "Started at: " . date('Y-m-d H:i:s') . "\n";
 echo "Log file: $logFilePath\n";
+echo "Environment variables:\n";
+echo "PHP_VERBOSE: " . ($_SERVER['PHP_VERBOSE'] == 1 ? 'Set' : 'Not set') . "\n";
+echo "PHP_LIVE_MODE: " . ($_SERVER['PHP_LIVE_MODE'] == 1 ? 'Set' : 'Not set') . "\n";
 echo "===================\n\n";
+
+function validateAWSCredentials() {
+    $credentials = [
+        'AWS_ACCESS_KEY' => AWS_ACCESS_KEY,
+        'AWS_SECRET_KEY' => AWS_SECRET_KEY,
+        'AWS_ASSOCIATE_TAG' => AWS_ASSOCIATE_TAG
+    ];
+
+    $placeholders = [
+        'YOUR_AWS_ACCESS_KEY',
+        'YOUR_AWS_SECRET_KEY',
+        'YOUR_ASSOCIATE_TAG'
+    ];
+
+    try {
+        foreach ($credentials as $key => $value) {
+            if (empty($value) || in_array($value, $placeholders)) {
+                $message="$key is not properly configured.";
+                Debug::log($message, "CRITICAL");
+                throw new Exception($message);
+            }
+        }
+        Debug::log("AWS credentials configuration passed.");
+    } catch (Exception $e) {
+        Debug::log("AWS credentials configuration failed: " . $e->getMessage(), "CRITICAL");
+        Debug::sendErrorEmail("Amazon Rank Updater - Configuration Error", "AWS credentials configuration failed: " . $e->getMessage());
+        exit(1);
+    }
+}
+
 
 function checkAndCreateTables() {
     $db = new Database();
@@ -50,17 +83,12 @@ function checkAndCreateTables() {
 
 function main() {
     checkAndCreateTables();
-
+    validateAWSCredentials();
+    
     $db = new Database();
     $api = new AmazonAPI();
     
-    // Set live mode based on environment variable
-    $liveMode = isset($_SERVER['PHP_LIVE_MODE']) && $_SERVER['PHP_LIVE_MODE'] == 1;
-    $api->setLive($liveMode);
-    
-    Debug::setVerbose(isset($_SERVER['PHP_VERBOSE']) && $_SERVER['PHP_VERBOSE'] == 1);
-    
-    if ($liveMode) {
+      if ($_SERVER['PHP_LIVE_MODE'] == 1) {
         Debug::log("Running in LIVE mode. API calls will be made to Amazon.", "WARNING");
     } else {
         Debug::log("Running in TEST mode. No actual API calls will be made.", "INFO");
@@ -87,7 +115,7 @@ function main() {
             $errorMessage = "Critical error in main loop: " . $e->getMessage();
             Debug::log($errorMessage, "CRITICAL");
             Debug::sendErrorEmail("Amazon Rank Updater - Critical Error", $errorMessage);
-            sleep(300); // Wait 5 minutes before retrying
+            exit(1);
         }
     }
 }
