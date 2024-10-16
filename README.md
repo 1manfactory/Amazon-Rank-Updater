@@ -32,6 +32,7 @@ Update Amazon product ranks for a list of ASINs stored in a database. It uses th
    mkdir -p ~/bin
    ln -s ~/projects/amazon-rank-updater/php-wrapper.sh ~/bin/amazon-rank-updater
    export PATH="$HOME/bin:$PATH"
+   composer require thewirecutter/paapi5-php-sdk
    ```
 
 3. Set up your database and update the `config.php` file with your credentials.
@@ -64,6 +65,10 @@ Edit the `config.php` file to set:
 - Error notification email address
 
 ## Resources
+
+https://github.com/thewirecutter/paapi5-php-sdk
+
+https://partnernet.amazon.de/assoc_credentials/home
 
 https://webservices.amazon.com/paapi5/documentation/
 

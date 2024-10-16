@@ -4,7 +4,7 @@ debug.log
 phpmd_checker.php
 phpstan.neon
 ruleset.xml
-run.php
+test.php
 vendor/*
 composer.json
 composer.lock
