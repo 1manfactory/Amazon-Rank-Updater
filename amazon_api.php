@@ -24,10 +24,15 @@ class AmazonAPI
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($response === false) {
-            throw new \Exception('Error: ' . curl_error($ch));
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \Exception("cURL Error: $error");
         }
+
+        curl_close($ch);
 
         Debug::log("Response:" . print_r($response, true), "DEBUG");
 
@@ -39,7 +44,9 @@ class AmazonAPI
             throw new \Exception('Expected response to be a string, but received: ' . gettype($response));
         }
 
-        curl_close($ch);
+        if ($httpCode >= 400) {
+            throw new \Exception("HTTP Error: $httpCode. Response: $response");
+        }
 
         return $response;
     }

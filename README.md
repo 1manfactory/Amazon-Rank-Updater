@@ -63,6 +63,18 @@ Edit the `config.php` file to set:
 - API request intervals and daily update frequency
 - Error notification email address
 
+## Resources
+
+https://webservices.amazon.com/paapi5/documentation/
+
+https://webservices.amazon.com/paapi5/documentation/quick-start/using-curl.html
+
+https://webservices.amazon.com/paapi5/documentation/quick-start/using-sdk.html
+
+https://us-east-1.console.aws.amazon.com/iam/home#/home -> NAVIGATION: Users -> Create User
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

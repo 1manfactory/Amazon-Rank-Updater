@@ -18,6 +18,7 @@ class Debug
     public static function log(string $message, string $level = 'INFO'): void
     {
         $timestamp = date('Y-m-d H:i:s');
+        $message = str_replace(["\r\n", "\r", "\n"], ' ', $message); // Replace line breaks with spaces
         $logMessage = "[$timestamp] [$level] $message";
 
         // Log to file
