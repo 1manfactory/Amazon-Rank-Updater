@@ -1,5 +1,7 @@
 <?php
 
+namespace MyProject;
+
 class Debug
 {
     private static string $logFile = 'debug.log';

@@ -1,5 +1,7 @@
 <?php
 
+namespace MyProject;
+
 function validateAWSCredentials(): void
 {
     $credentials = [
@@ -19,11 +21,11 @@ function validateAWSCredentials(): void
             if (in_array($value, $placeholders)) {
                 $message = "$key is not properly configured.";
                 Debug::log($message, "CRITICAL");
-                throw new Exception($message);
+                throw new \Exception($message);
             }
         }
         Debug::log("AWS credentials configuration passed.");
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         Debug::log("AWS credentials configuration failed: " . $e->getMessage(), "CRITICAL");
         Debug::sendErrorEmail("Amazon Rank Updater - Configuration Error", "AWS credentials configuration failed: " . $e->getMessage());
         exit(1);
@@ -38,7 +40,7 @@ function checkAndCreateTables(): void
     try {
         $db->checkSourceTable();
         Debug::log("Source table check passed.");
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         Debug::log("Source table check failed: " . $e->getMessage(), "CRITICAL");
         exit(1);
     }
@@ -48,7 +50,7 @@ function checkAndCreateTables(): void
         try {
             $db->createTargetTable();
             Debug::log("Target table created successfully.");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Debug::log("Failed to create target table: " . $e->getMessage(), "CRITICAL");
             Debug::log("Please run the following SQL to create the table manually:");
             Debug::log($db->getCreateTableStatement());
@@ -90,7 +92,7 @@ function main(): void
 
             Debug::log("Completed update cycle. Waiting for next day...");
             sleep(DAILY_WAIT_TIME);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $errorMessage = "Critical error in main loop: " . $e->getMessage();
             Debug::log($errorMessage, "CRITICAL");
             Debug::sendErrorEmail("Amazon Rank Updater - Critical Error", $errorMessage);

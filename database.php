@@ -1,14 +1,16 @@
 <?php
 
+namespace MyProject;
+
 class Database
 {
     private $conn;
 
     public function __construct()
     {
-        $this->conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        $this->conn = new \mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
         if ($this->conn->connect_error) {
-            throw new Exception("Connection failed: " . $this->conn->connect_error);
+            throw new \Exception("Connection failed: " . $this->conn->connect_error);
         }
         $this->conn->set_charset("utf8");
     }
@@ -18,23 +20,23 @@ class Database
         $sql = "SHOW TABLES LIKE '" . SOURCE_TABLE . "'";
         $result = $this->conn->query($sql);
 
-        if (!$result instanceof mysqli_result) {
-            throw new Exception("Database query error: " . $this->conn->error);
+        if (!$result instanceof \mysqli_result) {
+            throw new \Exception("Database query error: " . $this->conn->error);
         }
 
         if ($result->num_rows == 0) {
-            throw new Exception("Source table " . SOURCE_TABLE . " does not exist.");
+            throw new \Exception("Source table " . SOURCE_TABLE . " does not exist.");
         }
 
         $sql = "SHOW COLUMNS FROM " . SOURCE_TABLE . " LIKE '" . SOURCE_ASIN_COLUMN . "'";
         $result = $this->conn->query($sql);
 
-        if (!$result instanceof mysqli_result) {
-            throw new Exception("Database query error: " . $this->conn->error);
+        if (!$result instanceof \mysqli_result) {
+            throw new \Exception("Database query error: " . $this->conn->error);
         }
 
         if ($result->num_rows == 0) {
-            throw new Exception("Source column " . SOURCE_ASIN_COLUMN . " does not exist in table " . SOURCE_TABLE);
+            throw new \Exception("Source column " . SOURCE_ASIN_COLUMN . " does not exist in table " . SOURCE_TABLE);
         }
     }
 
@@ -42,8 +44,8 @@ class Database
     {
         $sql = "SHOW TABLES LIKE '" . TARGET_TABLE . "'";
         $result = $this->conn->query($sql);
-        if (!$result instanceof mysqli_result) {
-            throw new Exception("Database query error: " . $this->conn->error);
+        if (!$result instanceof \mysqli_result) {
+            throw new \Exception("Database query error: " . $this->conn->error);
         }
         return $result->num_rows > 0;
     }
@@ -63,13 +65,13 @@ class Database
     {
         $sql = $this->getCreateTableStatement();
         if (!$this->conn->query($sql)) {
-            throw new Exception("Failed to create target table: " . $this->conn->error);
+            throw new \Exception("Failed to create target table: " . $this->conn->error);
         }
     }
 
     /**
      * @return string[] List of ASINs to update
-     * @throws Exception
+     * @throws \Exception
      */
     public function getASINsToUpdate(): array
     {
@@ -79,8 +81,8 @@ class Database
                 WHERE r.asin IS NULL";
         $result = $this->conn->query($sql);
 
-        if (!$result instanceof mysqli_result) {
-            throw new Exception("Database query error: " . $this->conn->error);
+        if (!$result instanceof \mysqli_result) {
+            throw new \Exception("Database query error: " . $this->conn->error);
         }
 
         $asins = [];
@@ -97,11 +99,11 @@ class Database
         $sql = "INSERT INTO " . TARGET_TABLE . " (asin, date, rank) VALUES (?, CURDATE(), ?)";
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) {
-            throw new Exception("Prepare failed: " . $this->conn->error);
+            throw new \Exception("Prepare failed: " . $this->conn->error);
         }
         $stmt->bind_param("si", $asin, $rank);
         if (!$stmt->execute()) {
-            throw new Exception("Execute failed: " . $stmt->error);
+            throw new \Exception("Execute failed: " . $stmt->error);
         }
         $stmt->close();
     }

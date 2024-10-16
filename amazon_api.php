@@ -1,5 +1,7 @@
 <?php
 
+namespace MyProject;
+
 class AmazonAPI
 {
     private int $errorCount = 0;
