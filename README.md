@@ -55,6 +55,7 @@ Options:
 - `-h, --help`: Display help information
 - `-v, --verbose`: Increase verbosity
 - `-l, --live`: Run in live mode (perform actual API calls)
+- `-d, --debug`: Insert mock data into the database
 
 ## Configuration
 

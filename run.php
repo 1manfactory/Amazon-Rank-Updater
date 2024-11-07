@@ -24,6 +24,7 @@ echo "Log file: $logFilePath\n";
 echo "Environment variables:\n";
 echo "PHP_VERBOSE: " . ($_SERVER['PHP_VERBOSE'] == 1 ? 'Set' : 'Not set') . "\n";
 echo "PHP_LIVE_MODE: " . ($_SERVER['PHP_LIVE_MODE'] == 1 ? 'Set' : 'Not set') . "\n";
+echo "PHP_DEBUG_MODE: " . ($_SERVER['PHP_DEBUG_MODE'] == 1 ? 'Set' : 'Not set') . "\n";
 echo "===================\n\n";
 
 try {

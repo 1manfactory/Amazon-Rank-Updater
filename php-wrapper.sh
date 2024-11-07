@@ -53,6 +53,12 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Ensure live and debug modes are not both enabled
+if [[ "$LIVE_MODE" -eq 1 && "$DEBUG_MODE" -eq 1 ]]; then
+    echo "Error: Live mode and debug mode cannot be enabled at the same time." >&2
+    exit 1
+fi
+
 # Set environment variables based on options
 export PHP_VERBOSE=${VERBOSE:-0}
 export PHP_LIVE_MODE=${LIVE_MODE:-0}

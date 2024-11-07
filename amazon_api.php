@@ -2,94 +2,203 @@
 
 namespace MyProject;
 
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\api\DefaultApi;
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\PartnerType;
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\SearchItemsRequest;
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\SearchItemsResource;
+use Amazon\ProductAdvertisingAPI\v1\Configuration;
+use GuzzleHttp\Client;
+use Exception;
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\GetItemsRequest;
+use Amazon\ProductAdvertisingAPI\v1\com\amazon\paapi5\v1\GetItemsResource;
+
+
+
 class AmazonAPI
 {
     private int $errorCount = 0;
 
-    /**
-     * Send a request using cURL
-     * @param string $url
-     * @param array<string> $headers
-     * @param array<string, array<int, string>|string> $body
-     * @return string
-     * @throws \Exception
-     */
-    public function sendRequest(string $url, array $headers, array $body): string
+    public function checkAWSCredentials(): void
     {
-        $ch = curl_init($url);
+        // Konfiguration für die Product Advertising API
+        $config = new Configuration();
+        $config->setAccessKey(AWS_ACCESS_KEY);
+        $config->setSecretKey(AWS_SECRET_KEY);
+        $config->setHost('webservices.amazon.de');
+        $config->setRegion('eu-west-1');
 
-        Debug::log("Sending request to Amazon API: $url", "DEBUG");
+        // Initialisiere die API-Instanz
+        $apiInstance = new DefaultApi(new Client(), $config);
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        // Erstelle die Suchanfrage
+        $searchItemsRequest = new SearchItemsRequest();
+        $searchItemsRequest->setSearchIndex('Books');
+        $searchItemsRequest->setKeywords('Harry Potter');
+        $searchItemsRequest->setItemCount(1);
+        $searchItemsRequest->setPartnerTag(AWS_ASSOCIATE_TAG);
+        $searchItemsRequest->setPartnerType(PartnerType::ASSOCIATES);
+        $searchItemsRequest->setResources([
+            SearchItemsResource::ITEM_INFOTITLE,
+            SearchItemsResource::OFFERSLISTINGSPRICE
+        ]);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        try {
+            // Sende die Testanfrage
+            $response = $apiInstance->searchItems($searchItemsRequest);
 
-        if ($response === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            throw new \Exception("cURL Error: $error");
+            // Prüfung, ob die Antwort gültig ist
+            if ($response->getSearchResult() !== null) {
+                Debug::log("AWS credentials are valid.");
+                return;
+            } else {
+                Debug::log("Invalid response received from Amazon API.", 'CRITICAL');
+                throw new Exception("Invalid response received from Amazon API.");
+            }
+        } catch (Exception $e) {
+            // E-Mail-Benachrichtigung und Abbruch des Programms bei Fehler
+            if (!empty(ERROR_EMAIL_TO)) {
+                $to = ERROR_EMAIL_TO;
+                $subject = 'AWS Credentials Warning';
+                $message = "Warning: AWS credentials validation failed.\n\nError: " . $e->getMessage();
+                $headers = "From: " . ERROR_EMAIL_FROM . "\r\n" .
+                    "Reply-To: " . ERROR_EMAIL_REPLY_TO . "\r\n" .
+                    "X-Mailer: PHP/" . phpversion();
+
+                mail($to, $subject, $message, $headers);
+            }
+
+            // Fehler im Log festhalten
+            Debug::log("AWS Credential Validation Failed: " . $e->getMessage(), 'CRITICAL');
+
+            // Programm beenden
+            throw new Exception("AWS credentials are invalid. Exiting program.\n");
         }
-
-        curl_close($ch);
-
-        Debug::log("Response:" . print_r($response, true), "DEBUG");
-
-        if (curl_errno($ch)) {
-            echo 'Error:' . curl_error($ch);
-        }
-
-        if (!is_string($response)) {
-            throw new \Exception('Expected response to be a string, but received: ' . gettype($response));
-        }
-
-        if ($httpCode >= 400) {
-            throw new \Exception("HTTP Error: $httpCode. Response: $response");
-        }
-
-        return $response;
     }
+
+
+
 
     /**
      * Get the rank for a given ASIN
      * @param string $asin
      * @return int|false
-     * @throws \Exception
+     * @throws Exception
      */
     public function getRank(string $asin)
     {
-        // API-URL
-        $url = "https://" . AWS_HOST . "/paapi5/getitems";
+        Debug::log("Starting API call to retrieve rank for ASIN: $asin", "DEBUG");
 
-        Debug::log("Fetching rank for ASIN: $asin");
 
-        if ($_SERVER['PHP_LIVE_MODE'] == 0) {
-            Debug::log("Test mode: Returning mock rank", "DEBUG");
-            return rand(1000, 1000000);
-        }
+        // Konfiguration des API-Clients
+        $config = new Configuration();
+        $config->setAccessKey(AWS_ACCESS_KEY);
+        $config->setSecretKey(AWS_SECRET_KEY);
+        $config->setHost('webservices.amazon.de');
+        $config->setRegion('eu-west-1');
 
-        // Prepare Header
-        $amzDate = gmdate('Ymd\THis\Z');
-        $dateStamp = gmdate('Ymd'); // Für die Signatur
-        $headers = $this->createSignedHeaders($url, $amzDate, $dateStamp, $asin);
+        $apiInstance = new DefaultApi(
+            new Client(),
+            $config
+        );
 
-        // Payload
-        $body = [
-            'ItemIds' => [$asin],
-            'PartnerTag' => AWS_ASSOCIATE_TAG,
-            'PartnerType' => 'Associates',
-            'Resources' => [
-                'BrowseNodeInfo.WebsiteSalesRank',
-                'ItemInfo.Title'
-            ]
-        ];
+        // Erstellung der GetItems-Anfrage
+        $getItemsRequest = new GetItemsRequest();
+        $getItemsRequest->setItemIds([$asin]);
+        $getItemsRequest->setPartnerTag(AWS_ASSOCIATE_TAG);
+        $getItemsRequest->setPartnerType(PartnerType::ASSOCIATES);
+
+        Debug::log("Configuring GetItemsRequest with PartnerTag: " . AWS_ASSOCIATE_TAG . " and ASIN: $asin", "DEBUG");
+        Debug::log("Requested resources: BrowseNodeInfo.WebsiteSalesRank and ItemInfo.Title", "DEBUG");        
+
+        
+
+        // Setze die Ressourcen als Strings
+        $getItemsRequest->setResources([
+            "BrowseNodeInfo.WebsiteSalesRank",
+            "ItemInfo.Title"
+        ]);
+
+        
+        
+
+
+
 
         try {
-            $response = $this->sendRequest($url, $headers, $body);
-        } catch (\Exception $e) {
+            Debug::log("Sending GetItemsRequest to Amazon PA-API for ASIN: $asin", "DEBUG");
+            $response = $apiInstance->getItems($getItemsRequest);
+            Debug::log("Received response from Amazon PA-API for ASIN: $asin", "DEBUG");
+
+            if (!isset($response->getItemsResult()->getItems()[0])) {
+                Debug::log("No items found in ItemsResult for ASIN: $asin", "WARNING");
+            } else {
+                Debug::log("Item found in ItemsResult for ASIN: $asin", "DEBUG");
+            }
+            
+
+            
+
+            // Überprüfe, ob die Antwort gültig ist und die nötigen Daten enthält
+            if (
+                $response->getItemsResult() !== null &&
+                isset($response->getItemsResult()->getItems()[0])
+            ) {
+                $item = $response->getItemsResult()->getItems()[0];
+
+                if ($item->getBrowseNodeInfo() === null || $item->getBrowseNodeInfo()->getWebsiteSalesRank() === null) {
+                    Debug::log("No WebsiteSalesRank found for ASIN: $asin", "WARNING");
+                } else {
+                    Debug::log("WebsiteSalesRank data found for ASIN: $asin", "DEBUG");
+                }
+
+
+
+
+
+                
+// Überprüfe, ob WebsiteSalesRank und Titel vorhanden sind
+$rank = null;
+if ($item->getBrowseNodeInfo() !== null && 
+    $item->getBrowseNodeInfo()->getWebsiteSalesRank() !== null) {
+
+    $websiteSalesRank = $item->getBrowseNodeInfo()->getWebsiteSalesRank();
+    
+    // Protokolliere die gesamte Struktur von WebsiteSalesRank für Debug-Zwecke
+    Debug::log("WebsiteSalesRank structure for ASIN $asin: " . print_r($websiteSalesRank, true), "DEBUG");
+
+    // Versuche, direkt auf die Ranginformationen zuzugreifen
+    if (method_exists($websiteSalesRank, 'getSalesRank')) {
+        $rank = $websiteSalesRank->getSalesRank();
+        Debug::log("Rank for ASIN $asin: " . $rank, "DEBUG");
+    } else {
+        Debug::log("Rank information not accessible in WebsiteSalesRank structure for ASIN: $asin", "WARNING");
+    }
+}
+
+$title = $item->getItemInfo()->getTitle()->getDisplayValue() ?? 'Unknown Title';
+
+if ($rank !== null) {
+    Debug::log("Rank for ASIN $asin ($title): $rank", "INFO");
+    return $rank;
+} else {
+    Debug::log("No rank found for ASIN: $asin", "WARNING");
+    return false;
+}
+
+
+
+
+
+
+
+            } else {
+                Debug::log("No rank found for ASIN: $asin", "WARNING");
+                return false;
+            }
+
+        } catch (Exception $e) {
+            Debug::log("Exception encountered while fetching data for ASIN $asin: " . $e->getMessage(), "ERROR");
+
             $this->errorCount++;
             Debug::log("Error fetching data for ASIN: $asin. " . $e->getMessage(), "ERROR");
 
@@ -97,110 +206,17 @@ class AmazonAPI
                 $errorMessage = "Reached maximum number of API errors (" . MAX_API_ERRORS . "). Aborting process.";
                 Debug::log($errorMessage, "CRITICAL");
                 Debug::sendErrorEmail("Amazon Rank Updater - Critical API Errors", $errorMessage);
-                throw new \Exception($errorMessage);
+                throw new Exception($errorMessage);
             }
 
+            Debug::log("Ending getRank method for ASIN: $asin", "DEBUG");
+
             return false;
         }
-
-        // Decode the JSON response
-        $responseDecoded = json_decode($response, true);
-
-        // Assert that $responseDecoded is an array
-        assert(is_array($responseDecoded));
-
-        if (!is_array($responseDecoded)) {
-            $this->errorCount++;
-            Debug::log("Failed to decode API response for ASIN: $asin", "ERROR");
-            return false;
-        }
-
-        // Check if the necessary structure exists and validate arrays
-        if (
-            isset($responseDecoded['ItemsResult']) &&
-            is_array($responseDecoded['ItemsResult']) &&
-            isset($responseDecoded['ItemsResult']['Items'][0]) &&
-            is_array($responseDecoded['ItemsResult']['Items'][0]) &&
-            isset($responseDecoded['ItemsResult']['Items'][0]['BrowseNodeInfo']['WebsiteSalesRank']['Rank'])
-        ) {
-            $rank = (int)$responseDecoded['ItemsResult']['Items'][0]['BrowseNodeInfo']['WebsiteSalesRank']['Rank'];
-        } else {
-            Debug::log("No rank found for ASIN: $asin", "WARNING");
-            return false;
-        }
-
-        // Check if the title is available
-        $title = $responseDecoded['ItemsResult']['Items'][0]['ItemInfo']['Title']['DisplayValue'] ?? 'Unknown Title';
-
-        Debug::log("Rank for ASIN $asin ($title): $rank", "INFO");
-
-        return $rank;
     }
 
-    /**
-     * Create signed headers for Amazon API request
-     * @param string $url
-     * @param string $amzDate
-     * @param string $dateStamp
-     * @param string $asin
-     * @return array<string, string>
-     */
-    private function createSignedHeaders($url, $amzDate, $dateStamp, $asin): array
-    {
-        $method = 'POST';
-        $service = 'execute-api';
-        $requestUri = '/paapi5/getitems';
 
-        $payload = json_encode([
-            'ItemIds' => [$asin],
-            'PartnerTag' => AWS_ASSOCIATE_TAG,
-            'PartnerType' => 'Associates',
-            'Resources' => [
-                'BrowseNodeInfo.WebsiteSalesRank',
-                'ItemInfo.Title'
-            ]
-        ]);
 
-        if ($payload === false) {
-            throw new \Exception('Failed to encode payload to JSON.');
-        }
 
-        $payloadHash = hash('sha256', $payload);
-
-        $canonicalHeaders = "content-type:application/json\nhost:" . AWS_HOST . "\nx-amz-date:$amzDate\n";
-        $signedHeaders = 'content-type;host;x-amz-date';
-
-        $canonicalRequest = "$method\n$requestUri\n\n$canonicalHeaders\n$signedHeaders\n$payloadHash";
-        $credentialScope = "$dateStamp/" . AWS_REGION . "/$service/aws4_request";
-        $stringToSign = "AWS4-HMAC-SHA256\n$amzDate\n$credentialScope\n" . hash('sha256', $canonicalRequest);
-
-        $signingKey = $this->getSignatureKey(AWS_SECRET_KEY, $dateStamp, AWS_REGION, $service);
-        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
-
-        $authorizationHeader = "AWS4-HMAC-SHA256 Credential=" . AWS_ACCESS_KEY . "/$credentialScope, SignedHeaders=$signedHeaders, Signature=$signature";
-
-        return [
-            'Authorization' => $authorizationHeader,
-            'Content-Type' => 'application/json',
-            'X-Amz-Date' => $amzDate
-        ];
-    }
-
-    /**
-     * Generate HMAC-SHA256 signature key
-     * @param string $key
-     * @param string $dateStamp
-     * @param string $regionName
-     * @param string $serviceName
-     * @return string
-     */
-    private function getSignatureKey($key, $dateStamp, $regionName, $serviceName)
-    {
-        $kDate = hash_hmac('sha256', $dateStamp, 'AWS4' . $key, true);
-        $kRegion = hash_hmac('sha256', $regionName, $kDate, true);
-        $kService = hash_hmac('sha256', $serviceName, $kRegion, true);
-        $kSigning = hash_hmac('sha256', 'aws4_request', $kService, true);
-
-        return $kSigning;
-    }
+    
 }
