@@ -14,16 +14,19 @@ Options:
     -h, --help      Display this help and exit
     -v, --verbose   Increase verbosity
     -l, --live      Run in live mode (perform actual API calls)
+    -d, --debug     Insert mock data into the database
 
 Examples:
-    ${0##*/} -v
+    ${0##*/} -v -d
     ${0##*/} -l
+    ${0##*/} -d
 EOF
 }
 
 # Default values
 VERBOSE=0
 LIVE_MODE=0
+DEBUG_MODE=0
 
 # Process command line arguments
 while [[ $# -gt 0 ]]; do
@@ -38,6 +41,9 @@ while [[ $# -gt 0 ]]; do
         -l|--live)
             LIVE_MODE=1
             ;;
+        -d|--debug)
+            DEBUG_MODE=1
+            ;;
         *)
             echo "Unknown option: $1" >&2
             show_help
@@ -50,6 +56,7 @@ done
 # Set environment variables based on options
 export PHP_VERBOSE=${VERBOSE:-0}
 export PHP_LIVE_MODE=${LIVE_MODE:-0}
+export PHP_DEBUG_MODE=${DEBUG_MODE:-0}
 
 # Set an environment variable to indicate that the wrapper is being used
 export WRAPPER_SCRIPT=1
@@ -63,5 +70,15 @@ if [ ! -f "run.php" ]; then
     exit 1
 fi
 
-# Execute the PHP script
-php run.php
+# Execute the PHP script based on selected mode
+if [[ "$DEBUG_MODE" -eq 1 ]]; then
+    echo "Running in Debug Mode: Inserting mock data into the database..."
+    php run.php --debug
+elif [[ "$LIVE_MODE" -eq 1 ]]; then
+    echo "Running in Live Mode: Performing actual API calls..."
+    php run.php --live
+else
+    echo "Help text requested or no mode selected. Displaying help."
+    show_help
+    exit 0
+fi

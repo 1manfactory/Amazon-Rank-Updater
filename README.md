@@ -76,7 +76,11 @@ https://webservices.amazon.com/paapi5/documentation/quick-start/using-curl.html
 
 https://webservices.amazon.com/paapi5/documentation/quick-start/using-sdk.html
 
-https://us-east-1.console.aws.amazon.com/iam/home#/home -> NAVIGATION: Users -> Create User
+https://us-east-1.console.aws.amazon.com/iam/home#/home -> NAVIGATION: Users -> Create User -> Security Information -> Access keys -> Generate Access Key
+
+https://partnernet.amazon.de/signup
+
+Then sign up for Product Advertising API at https://affiliate-program.amazon.com/assoc_credentials/home
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
 
