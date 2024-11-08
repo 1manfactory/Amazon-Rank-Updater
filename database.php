@@ -79,7 +79,7 @@ class Database
         $sql = "SELECT DISTINCT tm." . SOURCE_ASIN_COLUMN . " 
                 FROM " . SOURCE_TABLE . " tm
                 LEFT JOIN " . TARGET_TABLE . " r ON tm." . SOURCE_ASIN_COLUMN . " = r.asin AND r.date = CURDATE()
-                WHERE r.asin IS NULL";
+                WHERE r.asin IS NULL ORDER BY rand()";
         $result = $this->conn->query($sql);
 
         if (!$result instanceof \mysqli_result) {
