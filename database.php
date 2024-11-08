@@ -55,6 +55,7 @@ class Database
         return "CREATE TABLE " . TARGET_TABLE . " (
             id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             asin VARCHAR(10) NOT NULL,
+            title VARCHAR(255) NOT NULL,  -- New column for product title
             date DATE NOT NULL,
             rank INT(11) UNSIGNED NOT NULL,
             UNIQUE KEY unique_asin_date (asin, date)
@@ -94,14 +95,14 @@ class Database
         return $asins;
     }
 
-    public function updateRank(string $asin, ?int $rank): void
+    public function updateRank(string $asin, string $title, ?int $rank): void
     {
-        $sql = "INSERT INTO " . TARGET_TABLE . " (asin, date, rank) VALUES (?, CURDATE(), ?)";
+        $sql = "INSERT INTO " . TARGET_TABLE . " (asin, title, date, rank) VALUES (?, ?, CURDATE(), ?)";
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) {
             throw new \Exception("Prepare failed: " . $this->conn->error);
         }
-        $stmt->bind_param("si", $asin, $rank);
+        $stmt->bind_param("ssi", $asin, $title, $rank);
         if (!$stmt->execute()) {
             throw new \Exception("Execute failed: " . $stmt->error);
         }

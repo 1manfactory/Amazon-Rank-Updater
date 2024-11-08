@@ -69,14 +69,8 @@ function main(): void
     validateAWSCredentials();
     $amazonAPI = new AmazonAPI();
     $amazonAPI->checkAWSCredentials();
-    //$amazonAPI->getRank('B004LOWNOM'); // ok
-    //$amazonAPI->getRank('B004TM9J8Y'); // nicht ok
-    //$amazonAPI->getRank('B00597TCBW'); // nicht ok
-    //exit(1);
-
     
     $db = new Database();
-
 
     if ($_SERVER['PHP_LIVE_MODE'] == 1) {
         Debug::log("Running in LIVE mode. API calls will be made to Amazon.", "WARNING");
@@ -91,18 +85,19 @@ function main(): void
             foreach ($asins as $asin) {
                 Debug::log("Processing ASIN: $asin");
 
-                $rank = false;
+                $info = [];
 
                 if ($_SERVER['PHP_LIVE_MODE'] == 1) {
-                    $rank = $amazonAPI->getRank($asin);
+                    $info = $amazonAPI->getRankAndTitle($asin);
+
                 } elseif ($_SERVER['PHP_DEBUG_MODE'] == 1) {
                     // fake mockdata
-                    $rank = rand(1000, 1000000);
+                    $info['rank'] = rand(1000, 1000000);
                 }
 
-                if ($rank !== false) {
-                    $db->updateRank($asin, $rank);
-                    Debug::log("Updated ASIN: $asin, Rank: $rank");
+                if ($info !== false) {
+                    $db->updateRank($asin, $info['title'], $info['rank']);
+                    Debug::log("Updated ASIN: $asin, Rank: ".$info['rank']);
                 }
 
                 sleep(API_REQUEST_INTERVAL);

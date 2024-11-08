@@ -14,8 +14,6 @@ define('SOURCE_ASIN_COLUMN', 'amazon_asin');
 define('TARGET_TABLE', 'rank');
 
 // Amazon API configuration
-// https://us-east-1.console.aws.amazon.com/iam/home#/home -> NAVIGATION: Users -> Create User
-// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
 define('AWS_ACCESS_KEY', 'YOUR_AWS_ACCESS_KEY');
 define('AWS_SECRET_KEY', 'YOUR_AWS_SECRET_KEY');
 define('AWS_ASSOCIATE_TAG', 'YOUR_ASSOCIATE_TAG');

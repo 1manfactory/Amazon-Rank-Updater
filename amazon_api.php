@@ -18,17 +18,17 @@ class AmazonAPI
 
     public function checkAWSCredentials(): void
     {
-        // Konfiguration für die Product Advertising API
+        // configure Product Advertising API
         $config = new Configuration();
         $config->setAccessKey(AWS_ACCESS_KEY);
         $config->setSecretKey(AWS_SECRET_KEY);
         $config->setHost('webservices.amazon.de');
         $config->setRegion('eu-west-1');
 
-        // Initialisiere die API-Instanz
+        // init apiInstance
         $apiInstance = new DefaultApi(new Client(), $config);
 
-        // Erstelle die Suchanfrage
+        // create simple search request for testing
         $searchItemsRequest = new SearchItemsRequest();
         $searchItemsRequest->setSearchIndex('Books');
         $searchItemsRequest->setKeywords('Harry Potter');
@@ -42,10 +42,10 @@ class AmazonAPI
         ]);
 
         try {
-            // Sende die Testanfrage
+            // send test/search request
             $response = $apiInstance->searchItems($searchItemsRequest);
 
-            // Prüfung, ob die Antwort gültig ist
+            // do we have a valid answer?
             if ($response->getSearchResult() !== null) {
                 Debug::log("AWS credentials are valid.");
                 return;
@@ -54,7 +54,7 @@ class AmazonAPI
                 throw new Exception("Invalid response received from Amazon API.");
             }
         } catch (Exception $e) {
-            // E-Mail-Benachrichtigung und Abbruch des Programms bei Fehler
+            // send email and exit on error
             if (!empty(ERROR_EMAIL_TO)) {
                 $to = ERROR_EMAIL_TO;
                 $subject = 'AWS Credentials Warning';
@@ -66,25 +66,23 @@ class AmazonAPI
                 mail($to, $subject, $message, $headers);
             }
 
-            // Fehler im Log festhalten
             Debug::log("Warning: AWS credentials validation failed.\n\nError: " . $e->getMessage() . "\n\n" . $e->getTraceAsString(), 'CRITICAL');
 
-            // Programm beenden
             throw new Exception("AWS credentials are invalid. Exiting program.\n");
         }
     }
 
     /**
-     * Get the rank for a given ASIN
+     * Get the rank and the title for a given ASIN
      * @param string $asin
      * @return int|false
      * @throws Exception
      */
-    public function getRank(string $asin)
+    public function getRankAndTitle(string $asin)
     {
         Debug::log("Starting API call to retrieve rank for ASIN: $asin", "DEBUG");
 
-        // Konfiguration des API-Clients
+        // configure API client
         $config = new Configuration();
         $config->setAccessKey(AWS_ACCESS_KEY);
         $config->setSecretKey(AWS_SECRET_KEY);
@@ -96,16 +94,15 @@ class AmazonAPI
             $config
         );
 
-        // Erstellung der GetItems-Anfrage
+        // create getItem request
         $getItemsRequest = new GetItemsRequest();
         $getItemsRequest->setItemIds([$asin]);
         $getItemsRequest->setPartnerTag(AWS_ASSOCIATE_TAG);
         $getItemsRequest->setPartnerType(PartnerType::ASSOCIATES);
 
         Debug::log("Configuring GetItemsRequest with PartnerTag: " . AWS_ASSOCIATE_TAG . " and ASIN: $asin", "DEBUG");
-        Debug::log("Requested resources: BrowseNodeInfo.WebsiteSalesRank and ItemInfo.Title", "DEBUG");
 
-        // Setze die Ressourcen
+        // set resources
         $getItemsRequest->setResources([
             GetItemsResource::BROWSE_NODE_INFOWEBSITE_SALES_RANK,
             GetItemsResource::ITEM_INFOTITLE
@@ -114,7 +111,6 @@ class AmazonAPI
         try {
             Debug::log("Sending GetItemsRequest to Amazon PA-API for ASIN: $asin", "DEBUG");
             $response = $apiInstance->getItems($getItemsRequest);
-            Debug::log("Received response from Amazon PA-API for ASIN: $asin", "DEBUG");
 
             if ($response->getErrors() !== null) {
                 foreach ($response->getErrors() as $error) {
@@ -124,35 +120,31 @@ class AmazonAPI
                 Debug::log("No ItemsResult in API response for ASIN: $asin", "WARNING");
             }
 
-
-
             if ($response->getItemsResult() !== null && isset($response->getItemsResult()->getItems()[0])) {
                 Debug::log("Item found in ItemsResult for ASIN: $asin", "DEBUG");
             } else {
                 Debug::log("No items found in ItemsResult for ASIN: $asin", "WARNING");
             }
 
-
-
-            // Überprüfe, ob die Antwort gültig ist und die nötigen Daten enthält
+            // check for data in response
             if (
                 $response->getItemsResult() !== null &&
                 isset($response->getItemsResult()->getItems()[0])
             ) {
                 $item = $response->getItemsResult()->getItems()[0];
 
-                Debug::log("WebsiteSalesRank data found for ASIN: $asin", "DEBUG");
-
-                // Überprüfe, ob WebsiteSalesRank und Titel vorhanden sind
+                // do we have WebsiteSalesRank?
                 $rank = null;
                 if ($item->getBrowseNodeInfo() !== null && $item->getBrowseNodeInfo()->getWebsiteSalesRank() !== null) {
 
+                    Debug::log("WebsiteSalesRank data found for ASIN: $asin", "DEBUG");
+
                     $websiteSalesRank = $item->getBrowseNodeInfo()->getWebsiteSalesRank();
 
-                    // Protokolliere die gesamte Struktur von WebsiteSalesRank für Debug-Zwecke
+                    // store all data for debuggin purposes
                     Debug::log("WebsiteSalesRank structure for ASIN $asin: " . print_r($websiteSalesRank, true), "DEBUG");
 
-                    // Versuche, direkt auf die Ranginformationen zuzugreifen
+                    // retrieve sales rank
                     if (method_exists($websiteSalesRank, 'getSalesRank')) {
                         $rank = $websiteSalesRank->getSalesRank();
                         Debug::log("Rank for ASIN $asin: " . $rank, "DEBUG");
@@ -161,12 +153,12 @@ class AmazonAPI
                     }
                 }
 
+                // get the title of the product
                 $title = $item->getItemInfo()->getTitle()->getDisplayValue() ?: 'Unknown Title';
-
 
                 if ($rank !== null) {
                     Debug::log("Rank for ASIN $asin ($title): $rank", "INFO");
-                    return $rank;
+                    return ['rank' =>$rank, 'title' => $title];
                 } else {
                     Debug::log("No rank found for ASIN: $asin", "WARNING");
                     return false;
@@ -181,6 +173,7 @@ class AmazonAPI
             $this->errorCount++;
             Debug::log("Error fetching data for ASIN: $asin. " . $e->getMessage(), "ERROR");
 
+            // don't stress your luck, so skip if we have too many API errors
             if ($this->errorCount >= MAX_API_ERRORS) {
                 $errorMessage = "Reached maximum number of API errors (" . MAX_API_ERRORS . "). Aborting process.";
                 Debug::log($errorMessage, "CRITICAL");
