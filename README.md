@@ -57,7 +57,7 @@ This table is used as the target table where the rankings and titles are stored.
    mkdir -p ~/bin
    ln -s ~/projects/amazon-rank-updater/php-wrapper.sh ~/bin/amazon-rank-updater
    export PATH="$HOME/bin:$PATH"
-   composer require thewirecutter/paapi5-php-sdk
+   composer install
    ```
 
 3. Set up your database and update the `config.php` file with your credentials.

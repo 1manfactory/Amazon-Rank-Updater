@@ -1,0 +1,6 @@
+{
+    "require": {
+        "thewirecutter/paapi5-php-sdk": "^1.2",
+        "aws/aws-sdk-php": "^3.325"
+    }
+}
