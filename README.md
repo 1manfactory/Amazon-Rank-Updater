@@ -73,6 +73,8 @@ https://partnernet.amazon.de/assoc_credentials/home
 
 https://webservices.amazon.com/paapi5/documentation/
 
+https://github.com/thewirecutter/paapi5-php-sdk/tree/main/src/com/amazon/paapi5/v1
+
 https://webservices.amazon.com/paapi5/documentation/quick-start/using-curl.html
 
 https://webservices.amazon.com/paapi5/documentation/quick-start/using-sdk.html
