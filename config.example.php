@@ -20,10 +20,6 @@ define('AWS_ASSOCIATE_TAG', 'YOUR_ASSOCIATE_TAG');
 define('AWS_HOST', 'webservices.amazon.com');
 define('AWS_REGION', 'us-east-1');
 
-// API limits and time intervals
-define('API_REQUEST_INTERVAL', 10); // Seconds between requests
-define('DAILY_WAIT_TIME', 86400); // 24 hours in seconds
-
 // E-mail configuration (leave empty to disable email notifications)
 define('ERROR_EMAIL_TO', '');
 define('ERROR_EMAIL_FROM', '');

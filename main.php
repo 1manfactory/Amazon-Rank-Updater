@@ -69,7 +69,7 @@ function main(): void
     validateAWSCredentials();
     $amazonAPI = new AmazonAPI();
     $amazonAPI->checkAWSCredentials();
-    
+
     $db = new Database();
 
     if ($_SERVER['PHP_LIVE_MODE'] == 1) {
@@ -81,15 +81,18 @@ function main(): void
     while (true) {
         try {
             $asins = $db->getASINsToUpdate();
+            $strict_request_interval = (24 * 60 * 60) / count($asins); // share requests over a complete day
+            $cumulated_request_interval = 0;
 
             foreach ($asins as $asin) {
+                $flex_request_interval = intval($strict_request_interval - rand(0, $strict_request_interval * 0.2));
+                $cumulated_request_interval .= $flex_request_interval + 3; // 3 seconds per request
                 Debug::log("Processing ASIN: $asin");
 
                 $info = [];
 
                 if ($_SERVER['PHP_LIVE_MODE'] == 1) {
                     $info = $amazonAPI->getRankAndTitle($asin);
-
                 } elseif ($_SERVER['PHP_DEBUG_MODE'] == 1) {
                     // fake mockdata
                     $info['rank'] = rand(1000, 1000000);
@@ -97,14 +100,17 @@ function main(): void
 
                 if ($info !== false) {
                     $db->updateRank($asin, $info['title'], $info['rank']);
-                    Debug::log("Updated ASIN: $asin, Rank: ".$info['rank']);
+                    Debug::log("Updated ASIN: $asin, Rank: " . $info['rank']);
                 }
 
-                sleep(API_REQUEST_INTERVAL);
+                Debug::log("Sleep " . $flex_request_interval . " seconds");
+                sleep($flex_request_interval);
             }
 
-            Debug::log("Completed update cycle. Waiting for next day...");
-            sleep(DAILY_WAIT_TIME);
+            $seconds_big_sleep = (24 * 60 * 60) - $cumulated_request_interval;
+
+            Debug::log("Completed update cycle. Waiting " . $seconds_big_sleep . " seconds for next day...");
+            sleep($seconds_big_sleep);
         } catch (\Exception $e) {
             $errorMessage = "Critical error in main loop: " . $e->getMessage();
             Debug::log($errorMessage, "CRITICAL");

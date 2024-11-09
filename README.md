@@ -87,7 +87,6 @@ Options:
 Edit the `config.php` file to set:
 - Database connection details
 - Amazon API credentials
-- API request intervals and daily update frequency
 - Error notification email address
 
 ## Setting Up as a Linux Service
