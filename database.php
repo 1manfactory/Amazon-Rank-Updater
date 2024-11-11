@@ -57,7 +57,7 @@ class Database
             asin VARCHAR(10) NOT NULL,
             title VARCHAR(255) NOT NULL,  -- New column for product title
             date DATE NOT NULL,
-            rank INT(11) UNSIGNED NOT NULL,
+            rank INT(11) UNSIGNED,
             UNIQUE KEY unique_asin_date (asin, date)
         )";
     }

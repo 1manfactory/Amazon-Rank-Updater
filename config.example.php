@@ -7,7 +7,7 @@ define('DB_PASS', 'your_password');
 define('DB_NAME', 'your_database');
 
 // Source table configuration
-define('SOURCE_TABLE', 'titlemeta');
+define('SOURCE_TABLE', 'product_meta_data');
 define('SOURCE_ASIN_COLUMN', 'amazon_asin');
 
 // Target table configuration

@@ -101,6 +101,9 @@ function main(): void
                 if ($info !== false) {
                     $db->updateRank($asin, $info['title'], $info['rank']);
                     Debug::log("Updated ASIN: $asin, Rank: " . $info['rank']);
+                } else {
+                    $db->updateRank($asin, 'N/A', null);
+                    Debug::log("Updated ASIN: $asin, Rank: NULL");
                 }
 
                 Debug::log("Sleep " . $flex_request_interval . " seconds");
