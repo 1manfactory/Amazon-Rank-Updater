@@ -66,8 +66,6 @@ This table is used as the target table where the rankings and titles are stored.
    nano config.php
    ```
 
-4. Update `config.php` with your Amazon API credentials and email settings.
-
 ## Usage
 
 Run the script using the provided wrapper:
